@@ -1,0 +1,10 @@
+{
+    "input_voxel_grid_size" : 128,
+    "decoder_hidden_dimension" : 512,
+    "decoder_num_hidden_layers" : 8,
+    "latent_dimension" : 256,
+    "num_sdf_samples" : 250000,
+    "shapenet_path" : "Assets/ShapeNet",
+    "cuda_voxelizer_path" : "thirdparty/cuda_voxelizer/cuda_voxelizer",
+    "shapenet_pickle_name" : "shapenet_data.pkl"
+}

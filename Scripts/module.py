@@ -5,22 +5,6 @@ import torch.nn.functional as F
 import os
 import numpy as np
 
-class VAEBottleNeck(nn.Module):
-    def __init__(self, latent_dim=256):
-        super(VAEBottleNeck, self).__init__()
-
-        self.latent_dim = latent_dim
-        self.gaussian_nums = nn.Parameter(torch.randn(latent_dim))
-        
-    def forward(self, x):
-        self.means = x[0 : self.latent_dim]
-        self.stddev = x[self.latent_dim : self.latent_dim * 2]
-        return self.means + self.stddev * self.gaussian_nums
-
-class VQVAEBottleNeck(nn.Module):
-    def __init__(self, latent_dim=256):
-        super(VQVAEBottleNeck, self).__init__()
-
 class VoxelCNNEncoder(nn.Module):
     def __init__(self, input_size=(128, 128, 128), latent_size=256):
         super().__init__()
@@ -30,7 +14,7 @@ class VoxelCNNEncoder(nn.Module):
         # Add batch normalization for better training stability
         self.encoder = nn.Sequential(
             # First block
-            nn.Conv3d(3, 16, kernel_size=3, stride=2, padding=1),
+            nn.Conv3d(1, 16, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             nn.MaxPool3d(kernel_size=4, stride=2),
