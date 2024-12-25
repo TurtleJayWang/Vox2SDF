@@ -16,6 +16,8 @@ class Config:
         self.cuda_voxelizer_path = self.config["cuda_voxelizer_path"]
         self.shapenet_pickle_name = self.config["shapenet_pickle_name"]
         self.shapenet_categories = self.config["shapenet_categories"]
+        self.num_augment_data = self.config["num_augment_data"]
+        self.seperate_ratio = self.config["seperate_ratio"]
 
     def log(self): 
         logging.info(self.config)

@@ -7,5 +7,7 @@
     "shapenet_path" : "Assets/ShapeNet",
     "cuda_voxelizer_path" : "thirdparty/cuda_voxelizer/cuda_voxelizer",
     "shapenet_pickle_name" : "shapenet_data.pkl",
-    "shapenet_categories" : ["02747177"]
+    "shapenet_categories" : ["02747177"],
+    "num_augment_data" : 16,
+    "seperate_ratio" : [0.8, 0.2]
 }

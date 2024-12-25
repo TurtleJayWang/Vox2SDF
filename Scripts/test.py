@@ -1,5 +1,3 @@
-import pyglet
-import time
-window = pyglet.window.Window()
-time.sleep(2)
-window.close()
+a = [1, 2, 3]
+a.extend([4, 5, 6])
+print(a)
