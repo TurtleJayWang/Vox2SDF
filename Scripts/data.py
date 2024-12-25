@@ -14,51 +14,9 @@ import logging
 import random
 import pickle
 import config
+import os
 
-def load_category(category_name, load_pickle=False, num_sdf_samples=250000, shapenet_dir="Assets/ShapeNet"):
-    if load_pickle:
-        category_models = pickle.load(os.path.join(shapenet_dir, category_name))
-        return category_models
-
-    category_models = []
-    models_directories = os.listdir(os.path.join(shapenet_dir, category_name))
-    i = 1
-    for model in tqdm(models_directories, desc="Processing through models...", position=1):
-        model_dir = os.path.join(models_directories, model)
-        i += 1
-        points, sdfs, voxel_tensor = process_model(model_dir, num_sdf_samples)
-        category_models.append({
-            "positions" : points, 
-            "sdfs" : sdfs, 
-            "voxel_tensor" : voxel_tensor,
-            "latent_code" : torch.zeros(256)
-        })
-        random.shuffle(category_models)
-    with open(os.path.join(models_directories, "models_data.pkl")) as models_data_file:
-        pickle.dump(category_models, file=models_data_file)
-    return category_models        
-
-def load_shapenet(num_sdf_samples=250000, load_pickle=False, shapenet_dir = "Assets/ShapeNet"):
-    results = {}
-    shapenet_pkl_filename = config.Config().shapenet_pickle_name
-    if load_pickle:
-        results = pickle.load(file=os.path.join(shapenet_dir, shapenet_pkl_filename))
-        return results
-    
-    category_directories = os.listdir(shapenet_dir)
-    for category in tqdm(category_directories, desc="Processing through categories...", position=0):
-        results[category] = load_category(
-            category_name=category, 
-            load_pickle=load_pickle, 
-            num_sdf_samples=num_sdf_samples, 
-            shapenet_dir=shapenet_dir
-        )
-    with open(os.path.join(shapenet_dir, shapenet_pkl_filename)) as shapenet_pkl:
-        pickle.dump(results, file=shapenet_pkl)
-    
-    return results
-
-def process_model(model_dir, num_of_sdf_points = 250000):
+def process_model(model_dir, config : config.Config):
     contents = os.listdir(model_dir)
 
     # Check if the directory arrangement is right
@@ -72,19 +30,24 @@ def process_model(model_dir, num_of_sdf_points = 250000):
     mesh = trimesh.load(model_file, force="mesh")
     logging.info(mesh)
     logging.info("Done")
+
     # Sample SDFs
     logging.info("Sampling SDF...")
-    points, sdfs = mts.sample_sdf_near_surface(mesh, number_of_points=num_of_sdf_points)
+    points, sdfs = mts.sample_sdf_near_surface(mesh, number_of_points=config.num_sdf_samples)
     logging.info("Done")
+
     # Get the voxelized object
     logging.info("Voxelizing...")
-    voxel_tensor = voxelize_model_cuda_voxelizer(model_file)
+    voxel_tensor = voxelize_model_cuda_voxelizer(model_file, config=config)
     logging.info("Done")
     logging.info("-" * 50)
 
     return (points, sdfs, voxel_tensor)
 
-def voxelize_model_cuda_voxelizer(mesh_file_path, resolution=128, cuda_voxelizer_path="thirdparty/cuda_voxelizer/cuda_voxelizer"):
+def voxelize_model_cuda_voxelizer(mesh_file_path, config : config.Config):
+    cuda_voxelizer_path = config.cuda_voxelizer_path
+    resolution = config.input_voxel_grid_size
+
     subprocess.run(
         [cuda_voxelizer_path, "-f", mesh_file_path, "-s", str(resolution)], 
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -98,6 +61,61 @@ def voxelize_model_cuda_voxelizer(mesh_file_path, resolution=128, cuda_voxelizer
     voxel_tensor = torch.from_numpy(voxel_array.copy())
     logging.info(voxel_tensor.shape)
     return voxel_tensor
+
+def load_category(category_name, config : config.Config):
+    shapenet_pkl_name, shapenet_pkl_fmt= os.path.splitext(config.shapenet_pickle_name)
+    models_pickle_data_filename = shapenet_pkl_name + "_" + category_name + shapenet_pkl_fmt
+    models_directories = os.listdir(os.path.join(shapenet_dir, category_name))
+    shapenet_dir = config.shapenet_path
+    num_sdf_samples = config.num_sdf_samples
+
+    load_pickle = models_pickle_data_filename in os.listdir(models_directories)
+    if load_pickle:
+        category_models = pickle.load(os.path.join(shapenet_dir, category_name))
+        return category_models
+
+    category_models = []
+    i = 1
+    for model in tqdm(models_directories, desc="Processing through models...", position=1):
+        model_dir = os.path.join(models_directories, model)
+        i += 1
+        points, sdfs, voxel_tensor = process_model(model_dir, num_sdf_samples)
+        category_models.append({
+            "positions" : points, 
+            "sdfs" : sdfs, 
+            "voxel_tensor" : voxel_tensor,
+            "latent_code" : torch.zeros(256)
+        })
+    with open(os.path.join(models_directories, models_pickle_data_filename)) as models_data_file:
+        pickle.dump(category_models, file=models_data_file)
+    return category_models        
+
+def load_shapenet(config : config.Config):
+    results = {}
+    shapenet_pkl_filename = config.shapenet_pickle_name
+    shapenet_categories = config.shapenet_categories
+    load_pickle = config.shapenet_pickle_name
+    shapenet_dir = config.shapenet_path
+    num_sdf_samples = config.num_sdf_samples
+
+    if load_pickle:
+        results = pickle.load(file=os.path.join(shapenet_dir, shapenet_pkl_filename))
+        return results
+    
+    if "All" in shapenet_categories:
+        category_directories = os.listdir(shapenet_dir)
+    else:
+        category_directories = shapenet_categories
+
+    for category in tqdm(category_directories, desc="Processing through categories...", position=0):
+        results[category] = load_category(
+            category_name=category, 
+            config=config
+        )
+    with open(os.path.join(shapenet_dir, shapenet_pkl_filename)) as shapenet_pkl:
+        pickle.dump(results, file=shapenet_pkl)
+    
+    return results
 
 class ModelData(Dataset):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
     def __init__(self, category_id=""):
