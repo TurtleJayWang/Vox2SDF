@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import os
 import numpy as np
 
+import config
+
 class VoxelCNNEncoder(nn.Module):
     def __init__(self, input_size=(128, 128, 128), latent_size=256):
         super().__init__()
@@ -99,46 +101,22 @@ class SDFDecoder(nn.Module):
         return x
 
 class FullNetwork(nn.Module):
-    def __init__(self,
-        latent_folder,
-        input_size=(128, 128, 128), 
-        latent_dim=256,
-        num_decoder_layer=10,
-        load_latent=False
-    ):
+    def __init__(self, latent_folder, config : config.Config):
         super(FullNetwork, self).__init__()
 
-        self.load_latent = load_latent
         self.latent_folder = latent_folder
 
-        self.encoder = VoxelCNNEncoder(input_size=input_size, latent_size=latent_dim)
+        latent_dim = config.latent_dimension
+        num_decoder_layer = config.decoder_num_hidden_layers
+
+        self.encoder = VoxelCNNEncoder(input_size=config.input_voxel_grid_size, latent_size=config.latent_dimension)
         self.decoder = SDFDecoder(latent_dim=latent_dim, num_layers=num_decoder_layer)
 
     def forward(self, voxel_grid, xyz):
-        if self.load_latent:
-            latent_file = os.listdir(self.latent_folder)[-1]
-            self.latent_code : torch.Tensor = self.load_latent_code(latent_file)
-            self.latent_code.requires_grad = False
-        else:
-            self.latent_code = self.encoder(voxel_grid)
-            self.latent_code.requires_grad = False
+        self.latent_code = self.encoder(voxel_grid)
+        self.latent_code.requires_grad = False
 
-        self.save_latent_code()
         return self.decoder(self.latent_code, xyz)
-
-    def to_train(self):
-        self.load_latent = False
-
-    def to_use(self):
-        self.load_latent = True
-
-    def save_latent_code(self):
-        np.save(os.path.join(self.latent_folder, "latent_code.pkl"), self.latent_code.numpy())
-
-    def load_latent_code(self, file=""):
-        return torch.from_numpy(
-            np.load(os.path.join(self.latent_folder, "latent_code.pkl"))
-        )
     
 if __name__ == "__main__":
     print(os.path.join("../LatentCode", "latent_code.pkl"))

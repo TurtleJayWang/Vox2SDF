@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 
 import numpy as np
 import trimesh
@@ -31,6 +31,43 @@ def generate_random_rotation_matrix():
     
     return rotation_matrix
 
+def normalize_mesh(mesh, unit_sphere=True):
+    """
+    Normalize a mesh by centering it at origin and scaling to fit within a unit sphere or cube.
+    
+    Parameters:
+    -----------
+    mesh : trimesh.Trimesh
+        The input mesh to normalize
+    unit_sphere : bool, optional
+        If True, normalize to unit sphere. If False, normalize to unit cube
+        Default is True
+        
+    Returns:
+    --------
+    trimesh.Trimesh
+        Normalized copy of the input mesh
+    """
+    # Create a copy of the mesh to avoid modifying the original
+    normalized = mesh.copy()
+    
+    # Center the mesh at origin
+    center = normalized.vertices.mean(axis=0)
+    normalized.vertices -= center
+    
+    # Scale the mesh
+    if unit_sphere:
+        # Scale to fit in unit sphere (radius = 1)
+        scale = np.max(np.linalg.norm(normalized.vertices, axis=1))
+    else:
+        # Scale to fit in unit cube (max dimension = 1)
+        scale = np.max(np.abs(normalized.vertices))
+    
+    if scale > 0:
+        normalized.vertices /= scale
+        
+    return normalized
+
 def process_model(model_dir, config : config.Config):
     contents = os.listdir(model_dir)
 
@@ -46,13 +83,14 @@ def process_model(model_dir, config : config.Config):
     logging.info(mesh)
     logging.info("Done")
 
-    meshes = [mesh] * config.num_augment_data
-    for i in range(1, config.num_augment_data):
-        meshes[i].apply_scale(random.random() * 2)
-        meshes[i].apply_transform(generate_random_rotation_matrix())
+    meshes = [normalize_mesh(mesh)] * config.num_augment_data
+    for i in range(0, config.num_augment_data):
+        if i != 0:
+            meshes[i].apply_scale(random.random() * 2)
+            meshes[i].apply_transform(generate_random_rotation_matrix())
 
         tempf = NamedTemporaryFile(suffix=".obj")
-        mesh.export(file_obj=tempf.name, file_type="obj")
+        mesh.export(file_obj=tempf.name)
 
         logging.info("Sampling SDF...")
         points, sdfs = mts.sample_sdf_near_surface(meshes[i], number_of_points=config.num_sdf_samples)
@@ -77,25 +115,32 @@ def voxelize_model_cuda_voxelizer(mesh_file_path, config : config.Config):
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
 
-    entity = Entity().from_file(mesh_file_path + "_128.vox")
+    entity = Entity().from_file(mesh_file_path + f"_{config.input_voxel_grid_size}.vox")
     voxel_array = entity.get_dense()
     voxel_array = np.pad(voxel_array, pad_width=1, mode="constant", constant_values=0)
     logging.info(type(voxel_array))
     logging.info(entity)
     voxel_tensor = torch.from_numpy(voxel_array.copy())
     logging.info(voxel_tensor.shape)
+    os.remove(mesh_file_path + f"_{config.input_voxel_grid_size}.vox")
     return voxel_tensor
 
+"""
+Yield all sdfs, points, and voxel_grid in all models in the provided category folder and its augmented one
+"""
 def load_category(category_name, config : config.Config):
     shapenet_pkl_name, shapenet_pkl_fmt= os.path.splitext(config.shapenet_pickle_name)
     models_pickle_data_filename = shapenet_pkl_name + "_" + category_name + shapenet_pkl_fmt
     shapenet_dir = config.shapenet_path
     category_dir = os.path.join(shapenet_dir, category_name)
     models_directories = os.listdir(category_dir)
+    random.shuffle(models_directories)
 
     load_pickle = models_pickle_data_filename in os.listdir(category_dir)
     if load_pickle:
-        category_models = pickle.load(os.path.join(shapenet_dir, category_name))
+        f = open(os.path.join(category_dir, models_pickle_data_filename), mode="b+r")
+        category_models = list(pickle.load(f))
+        f.close()
         return category_models
 
     category_models = []
@@ -104,16 +149,31 @@ def load_category(category_name, config : config.Config):
         model_dir = os.path.join(category_dir, model)
         i += 1
         for points, sdfs, voxel_tensor in process_model(model_dir, config=config):
-            category_models.append({
-                "positions" : points,
-                "sdfs" : sdfs,
-                "voxel_tensor" : voxel_tensor
+            category_models.append({ 
+                "positions" : points, 
+                "sdfs" : sdfs, 
+                "voxel_tensor" : voxel_tensor 
             })
+    return category_models
 
-    with open(os.path.join(category_dir, models_pickle_data_filename)) as models_data_file:
-        pickle.dump(category_models, file=models_data_file)
+class ModelData(Dataset):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+    def __init__(self, data, config : config.Config):
+        super(ModelData, self).__init__()
+        
+        self.num_sdf_samples = config.num_sdf_samples
 
-    return category_models        
+        self.datas = data
+
+    def __getitem__(self, index):
+        data = self.datas[index // self.num_sdf_samples]
+        i = index % self.num_sdf_samples
+        return data["voxel_tensor"], data["positions"][i], data["sdfs"][i]
+
+    def __len__(self):
+        return self.get_batch_sizes() * len(self.datas)
+
+    def get_batch_sizes(self):
+        return self.num_sdf_samples
 
 def load_shapenet(config : config.Config):
     results = {}
@@ -130,6 +190,13 @@ def load_shapenet(config : config.Config):
             category_name=category, 
             config=config
         )
+
+        shapenet_pkl_name, shapenet_pkl_fmt= os.path.splitext(config.shapenet_pickle_name)
+        models_pickle_data_filename = shapenet_pkl_name + "_" + category + shapenet_pkl_fmt
+        category_pkl_full_path = os.path.join(config.shapenet_path, category, models_pickle_data_filename)
+        if not models_pickle_data_filename in os.listdir(os.path.join(config.shapenet_path, category)):
+            with open(category_pkl_full_path, "b+w") as category_f:
+                pickle.dump(results[category], file=category_f)
     
     return results
 
@@ -147,25 +214,6 @@ def load_train_validation_seperated_data(config : config.Config):
 
     return train_data, validation_data
 
-class ModelData(Dataset):                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-    def __init__(self, data, config : config.Config):
-        super(ModelData, self).__init__()
-        
-        self.num_sdf_samples = config.num_sdf_samples
-
-        self.datas = data
-
-    def __getitem__(self, index):
-        data = self.datas[index // self.num_sdf_samples]
-        i = index % self.num_sdf_samples
-        return data["voxel_tensor"], data["positions"][i], data["sdfs"[i]]
-
-    def __len__(self):
-        return self.get_batch_sizes * len(self.datas)
-
-    def get_batch_sizes(self):
-        return self.num_sdf_samples
-
 def create_test_validation_loader(config : config.Config):
     train_data, validation_data = load_train_validation_seperated_data(config=config)
     train_dataset = ModelData(train_data, config=config)
@@ -173,12 +221,12 @@ def create_test_validation_loader(config : config.Config):
     
     train_loader = DataLoader(
         dataset=train_dataset, 
-        batch_size=train_dataset.get_batch_sizes(), 
+        batch_size=50, 
         shuffle=True
     )
     validation_loader = DataLoader(
         dataset=validation_dataset, 
-        batch_size=validation_dataset.get_batch_sizes(),
+        batch_size=50,
         shuffle=False
     )
 

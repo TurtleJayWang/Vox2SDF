@@ -1,3 +1,5 @@
+import torch
+
 import os
 import json
 import logging
@@ -18,6 +20,10 @@ class Config:
         self.shapenet_categories = self.config["shapenet_categories"]
         self.num_augment_data = self.config["num_augment_data"]
         self.seperate_ratio = self.config["seperate_ratio"]
+        self.train_epoch = self.config["train_epoch"]
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.learning_rate = self.config["learning_rate"]
+        self.check_point_filename = self.config["check_point_filename"]
 
     def log(self): 
         logging.info(self.config)
