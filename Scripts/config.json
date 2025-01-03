@@ -1,5 +1,7 @@
 {
-    "input_voxel_grid_size" : 128,
+    "train_epoch" : 4,
+    "learning_rate" : 0.0001,
+    "input_voxel_grid_size" : 64,
     "decoder_hidden_dimension" : 512,
     "decoder_num_hidden_layers" : 8,
     "latent_dimension" : 256,
@@ -8,6 +10,7 @@
     "cuda_voxelizer_path" : "thirdparty/cuda_voxelizer/cuda_voxelizer",
     "shapenet_pickle_name" : "shapenet_data.pkl",
     "shapenet_categories" : ["02747177"],
-    "num_augment_data" : 16,
-    "seperate_ratio" : [0.8, 0.2]
+    "num_augment_data" : 1,
+    "seperate_ratio" : [0.8, 0.2],
+    "check_point_filename" : "checkpoints/checkpoint.pkl"
 }
