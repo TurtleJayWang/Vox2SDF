@@ -7,7 +7,7 @@
     "latent_dimension" : 256,
     "num_sdf_samples" : 250000,
     "num_points_per_iter" : 5000,
-    "shapenet_path" : "Assets/ShapeNet",
+    "shapenet_path" : "Data/ShapeNet",
     "cuda_voxelizer_path" : "thirdparty/cuda_voxelizer/cuda_voxelizer",
     "shapenet_pickle_name" : "shapenet_data.pkl",
     "shapenet_categories" : ["02747177"],
