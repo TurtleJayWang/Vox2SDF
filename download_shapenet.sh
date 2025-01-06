@@ -1,4 +1,4 @@
-export HF_TOKEN="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"
+export HF_TOKEN=$1
 
 if [ ! -d Data ]; then
     mkdir Data
