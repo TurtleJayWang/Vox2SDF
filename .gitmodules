@@ -4,3 +4,6 @@
 [submodule "thirdparty/trimesh2"]
 	path = thirdparty/trimesh2
 	url = https://github.com/Forceflow/trimesh2.git
+[submodule "VoxelSDFDataset"]
+	path = VoxelSDFDataset
+	url = https://github.com/TurtleJayWang/VoxelSDFDataset.git
