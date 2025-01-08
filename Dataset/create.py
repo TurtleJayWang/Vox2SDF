@@ -130,7 +130,7 @@ def create_dataset(huggingface_token, shapenet_categories, shapenet_download_dir
                 points, sdfs, voxel_grid = process_model(normalized_model, i)
                 points = np.array(points)
                 sdfs = np.array(sdfs)
-                name = lambda type : f"{category}_{os.path.splitext(os.path.split(model_file)[-1])[0]}_{type}"
+                name = lambda type : f"{category}_{os.path.splitext(os.path.split(model_file)[-1])[0]}_{i}_{type}"
                 np.save(name("points"), points)
                 np.save(name("sdfs"), sdfs)
                 np.save(name("voxel_grid"), voxel_grid)
