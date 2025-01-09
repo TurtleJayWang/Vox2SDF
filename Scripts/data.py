@@ -135,8 +135,8 @@ def load_category(category_name, config : config.Config):
 
                 points, sdfs, voxel_tensor = process_model(normalized_mesh, i, config=config)
                 category_models.append({ 
-                    "positions" : points, 
-                    "sdfs" : sdfs, 
+                    "positions" : points,
+                    "sdfs" : sdfs,
                     "voxel_tensor" : voxel_tensor 
                 })
                 with open(model_pkl_path(i), "b+w") as f:

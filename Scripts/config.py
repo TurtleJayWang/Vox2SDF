@@ -25,6 +25,7 @@ class Config:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.learning_rate = self.config["learning_rate"]
         self.check_point_filename = self.config["check_point_filename"]
+        self.loss_filename = self.config["loss_filename"]
         self.is_train = self.config["is_train"]
         self.is_validation = self.config["is_validation"]
 

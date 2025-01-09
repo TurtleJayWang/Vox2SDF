@@ -14,6 +14,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 import logging
+import pickle
 
 class ModelTrainer:
     def __init__(self, train_dataloader : DataLoader, config : config.Config):
@@ -22,6 +23,7 @@ class ModelTrainer:
         self.network = FullNetwork("latent_code", config=config)
         self.device = config.device
         self.checkpoint_filename = config.check_point_filename
+        self.losses = []
 
         self.network = self.network.to(device=self.device)
 
@@ -33,6 +35,8 @@ class ModelTrainer:
     def train(self):
         self.network.train()
         for k in tqdm(range(self.epoch), desc="Epoch", position=2):
+            batch_loss = 0
+            length = 0
             for i, (voxel_tensor, point, sdf) in tqdm(enumerate(self.dataloader), desc="Batch", position=3, ncols=80):
                 point = rearrange(point, "b s c -> (b s) c")
                 sdf = rearrange(sdf.unsqueeze(2), "b s c -> (b s) c")
@@ -49,14 +53,19 @@ class ModelTrainer:
                 sdf_pred = self.network.decoder(latent, point)
 
                 loss = self.criterion(sdf_pred, sdf)
+                batch_loss += loss.item()
 
                 self.optimizer.zero_grad()
                 loss.backward()
 
                 self.optimizer.step()
+                length = i + 1
             
+            self.losses.append(batch_loss.item() / length)
+
             if k % 10 == 0 and k != 0:
                 self.save_parameters()
+                self.save_loss()
         
     def save_parameters(self):
         with open(self.checkpoint_filename, "b+r") as cp_f:
@@ -66,8 +75,12 @@ class ModelTrainer:
         if os.path.exists(self.checkpoint_filename):
             with open(self.checkpoint_filename, "b+a") as cp_f:
                 self.network.load_state_dict(torch.load(cp_f))
+    
+    def save_loss(self):
+        with open(self.config.loss_filename, "wb") as f:
+            pickle.dump(self.losses, f)
 
-def validation(network : FullNetwork, validation_loader : DataLoader, config : config.Config):
+def validation_and_export_mesh(network : FullNetwork, validation_loader : DataLoader, config : config.Config):
     network.eval()
     
     criterion = nn.MSELoss()
@@ -103,6 +116,7 @@ if __name__ == "__main__":
 
     cfg = config.Config()
     train_dataloader, validation_loader = data.create_test_validation_loader(config=cfg)
+    
     model_trainer = ModelTrainer(train_dataloader=train_dataloader, config=cfg)
 
     model_trainer.load_parameters()
@@ -113,4 +127,4 @@ if __name__ == "__main__":
 
     if cfg.is_validation:
         network = model_trainer.network
-        validation(network=network, validation_loader=validation_loader)
+        validation_and_export_mesh(network=network, validation_loader=validation_loader)
