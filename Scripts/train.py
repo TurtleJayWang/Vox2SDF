@@ -33,6 +33,8 @@ class ModelTrainer:
         self.optimizer = optim.Adam(self.network.parameters(), lr=config.learning_rate)
 
     def train(self):
+        self.load_loss()
+
         self.network.train()
         for k in tqdm(range(self.epoch), desc="Epoch", position=2):
             batch_loss = 0
@@ -79,6 +81,12 @@ class ModelTrainer:
     def save_loss(self):
         with open(self.config.loss_filename, "wb") as f:
             pickle.dump(self.losses, f)
+
+    def load_loss(self):
+        if os.path.exists(self.config.loss_filename):
+            with open(self.config.loss_filename, "rb") as f:
+                self.losses = pickle.load(f)
+        else: self.losses = []
 
 def validation_and_export_mesh(network : FullNetwork, validation_loader : DataLoader, config : config.Config):
     network.eval()
