@@ -61,7 +61,7 @@ class ModelTrainer:
                 self.optimizer.step()
                 length = i + 1
             
-            self.losses.append(batch_loss.item() / length)
+            self.losses.append(batch_loss / length)
 
             if k % 10 == 0 and k != 0:
                 self.save_parameters()
