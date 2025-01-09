@@ -70,7 +70,7 @@ class ModelTrainer:
                 self.save_loss()
         
     def save_parameters(self):
-        with open(self.checkpoint_filename, "b+r") as cp_f:
+        with open(self.checkpoint_filename, "wb") as cp_f:
             torch.save(self.network.state_dict(), cp_f)
         
     def load_parameters(self):
