@@ -19,4 +19,4 @@ wget --header="Authorization: Bearer $HF_TOKEN" https://huggingface.co/datasets/
 wget --header="Authorization: Bearer $HF_TOKEN" https://huggingface.co/datasets/ShapeNet/ShapeNetCore/resolve/main/02871439.zip
 wget --header="Authorization: Bearer $HF_TOKEN" https://huggingface.co/datasets/ShapeNet/ShapeNetCore/resolve/main/02876657.zip
 unzip  -o '*.zip' 
-rm '*.zip' 
+rm '*.zip'
