@@ -10,7 +10,7 @@ from module import FullNetwork, VoxelCNNEncoder, SDFDecoder
 import data
 import config
 
-from VoxelSDFDataset.utils.torch_init import VoxelSDFDataset
+from VoxelSDFDataset.utils.torch_load import VoxelSDFDataset
 
 import os
 import numpy as np
