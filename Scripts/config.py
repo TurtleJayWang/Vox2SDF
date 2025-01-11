@@ -15,7 +15,7 @@ class Config:
         self.latent_dimension = self.config["latent_dimension"]
         self.num_sdf_samples = self.config["num_sdf_samples"]
         self.num_points_per_iter = self.config["num_points_per_iter"]
-        self.shapenet_path = self.config["shapenet_path"]
+        self.dataset_path = self.config["dataset_path"]
         self.cuda_voxelizer_path = self.config["cuda_voxelizer_path"]
         self.shapenet_pickle_name = self.config["shapenet_pickle_name"]
         self.shapenet_categories = self.config["shapenet_categories"]

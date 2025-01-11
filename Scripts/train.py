@@ -7,16 +7,15 @@ import torch.optim as optim
 from einops import rearrange, repeat
 
 from module import FullNetwork, VoxelCNNEncoder, SDFDecoder
-import data
 import config
-
-from VoxelSDFDataset.utils.torch_load import VoxelSDFDataset
+from dataset.utils.torch_load import VoxelSDFDataset, create_test_validation_data_loader
 
 import os
 import numpy as np
 from tqdm import tqdm
 import logging
 import pickle
+import argparse
 
 class ModelTrainer:
     def __init__(self, train_dataloader : DataLoader, config : config.Config):
@@ -125,7 +124,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
 
     cfg = config.Config()
-    train_dataloader, validation_loader = data.create_test_validation_loader(config=cfg)
+    train_dataloader, validation_loader = create_test_validation_data_loader(
+        dataset_dir=cfg.dataset_path, 
+        dataset_config_file="dataset/config.json",
+        num_sdf_samples_per_item=cfg.num_points_per_iter
+    )
     
     model_trainer = ModelTrainer(train_dataloader=train_dataloader, config=cfg)
 
