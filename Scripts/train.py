@@ -21,7 +21,7 @@ class ModelTrainer:
     def __init__(self, train_dataloader : DataLoader, config : config.Config):
         self.epoch = config.train_epoch
         self.dataloader = train_dataloader
-        self.network = FullNetwork("latent_code", config=config)
+        self.network = FullNetwork(config=config)
         self.device = config.device
         self.checkpoint_filename = config.check_point_filename
         self.losses = []
@@ -89,37 +89,6 @@ class ModelTrainer:
                 self.losses = pickle.load(f)
         else: self.losses = []
 
-def validation_and_export_mesh(network : FullNetwork, validation_loader : DataLoader, config : config.Config):
-    network.eval()
-    
-    criterion = nn.MSELoss()
-    losses = torch.zeros(0)
-    
-    with torch.no_grad():    
-        for i, (voxel_tensor, point, sdf) in tqdm(enumerate(validation_loader, desc="Validation")):
-            point = rearrange(point, "b s c -> (b s) c")
-            sdf = rearrange(sdf.unsqueeze(2), "b s c -> (b s) c")
-
-            voxel_tensor = voxel_tensor.to(device=config.device)
-            point = point.to(device=config.device)
-            sdf = sdf.to(device=config.device)
-            
-            voxel_tensor = voxel_tensor.unsqueeze(1)
-
-            latent = network.encoder(voxel_tensor)                
-            latent = repeat(latent, "b l -> b s l", s=config.num_points_per_minor_batch)
-            latent = rearrange(latent, "b s l -> (b s) l")
-            sdf_pred = network.decoder(latent, point)
-
-            loss = criterion(sdf_pred, sdf)
-            losses = torch.cat((losses, loss))
-
-    losses = losses.numpy()
-    loss_avg = np.average(losses)
-    loss_stddev = np.std(losses)
-    logging.debug(f"Average of losses: {loss_avg}")
-    logging.debug(f"Standard deviation of losses: {loss_stddev}")
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
 
@@ -137,7 +106,3 @@ if __name__ == "__main__":
     model_trainer.save_parameters()
 
     logging.basicConfig(level=logging.DEBUG)
-
-    if cfg.is_validation:
-        network = model_trainer.network
-        validation_and_export_mesh(network=network, validation_loader=validation_loader)
