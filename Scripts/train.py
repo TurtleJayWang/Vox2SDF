@@ -51,7 +51,7 @@ class ModelTrainer:
                 voxel_tensor = voxel_tensor.unsqueeze(1)
 
                 latent = self.network.encoder(voxel_tensor)                
-                latent = repeat(latent, "b l -> b s l", s=self.config.num_points_per_iter)
+                latent = repeat(latent, "b l -> b s l", s=self.config.num_points_per_minor_batch)
                 latent = rearrange(latent, "b s l -> (b s) l")
                 sdf_pred = self.network.decoder(latent, point)
 
@@ -107,7 +107,7 @@ def validation_and_export_mesh(network : FullNetwork, validation_loader : DataLo
             voxel_tensor = voxel_tensor.unsqueeze(1)
 
             latent = network.encoder(voxel_tensor)                
-            latent = repeat(latent, "b l -> b s l", s=config.num_points_per_iter)
+            latent = repeat(latent, "b l -> b s l", s=config.num_points_per_minor_batch)
             latent = rearrange(latent, "b s l -> (b s) l")
             sdf_pred = network.decoder(latent, point)
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     train_dataloader, validation_loader = create_test_validation_data_loader(
         dataset_dir=cfg.dataset_path, 
         dataset_config_file="dataset/config.json",
-        num_sdf_samples_per_item=cfg.num_points_per_iter
+        num_sdf_samples_per_item=cfg.num_points_per_minor_batch
     )
     
     model_trainer = ModelTrainer(train_dataloader=train_dataloader, config=cfg)

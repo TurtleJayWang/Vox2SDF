@@ -121,5 +121,3 @@ class FullNetwork(nn.Module):
 
         return self.decoder(latent_code, xyz)
     
-if __name__ == "__main__":
-    print(os.path.join("../LatentCode", "latent_code.pkl"))
