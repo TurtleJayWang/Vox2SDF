@@ -8,6 +8,9 @@ from einops import rearrange, repeat
 
 from module import FullNetwork, VoxelCNNEncoder, SDFDecoder
 import config
+
+import sys
+sys.path.append("./")
 from dataset.utils.torch_load import VoxelSDFDataset, create_test_validation_data_loader
 
 import os
@@ -94,9 +97,10 @@ if __name__ == "__main__":
 
     cfg = config.Config()
     train_dataloader, validation_loader = create_test_validation_data_loader(
-        dataset_dir=cfg.dataset_path, 
+        dataset_dir=cfg.dataset_path,
+        batch_size=32, 
         dataset_config_file="dataset/config.json",
-        num_sdf_samples_per_item=cfg.num_points_per_minor_batch
+        num_sdf_samples_per_minor_batch=cfg.num_points_per_minor_batch
     )
     
     model_trainer = ModelTrainer(train_dataloader=train_dataloader, config=cfg)
