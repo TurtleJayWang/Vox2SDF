@@ -104,10 +104,9 @@ class SDFDecoder(nn.Module):
         return x
 
 class FullNetwork(nn.Module):
-    def __init__(self, latent_folder, config : config.Config):
+    def __init__(self, config : config.Config):
         super(FullNetwork, self).__init__()
 
-        self.latent_folder = latent_folder
         self.config = config
 
         latent_dim = config.latent_dimension
