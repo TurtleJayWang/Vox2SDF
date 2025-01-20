@@ -19,21 +19,21 @@ class VoxelCNNEncoder(nn.Module):
             nn.Conv3d(1, 16, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
-            nn.MaxPool3d(kernel_size=4, stride=2),
+            nn.MaxPool3d(kernel_size=2, stride=2),
             nn.Dropout3d(0.3),
             
             # Second block
             nn.Conv3d(16, 32, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
-            nn.MaxPool3d(kernel_size=4, stride=2),
+            nn.MaxPool3d(kernel_size=2, stride=2),
             nn.Dropout3d(0.3),
             
             # Third block
             nn.Conv3d(32, 64, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
-            nn.MaxPool3d(kernel_size=4, stride=2),
+            nn.MaxPool3d(kernel_size=2, stride=2),
             nn.Dropout3d(0.3),
             
             nn.Flatten()

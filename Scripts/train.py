@@ -43,7 +43,7 @@ class ModelTrainer:
         for k in tqdm(range(self.epoch), desc="Epoch", position=2):
             batch_loss = 0
             length = 0
-            for i, (voxel_tensor, point, sdf) in tqdm(enumerate(self.dataloader), desc="Batch", position=3, ncols=80):
+            for i, (voxel_tensor, point, sdf) in tqdm(enumerate(self.dataloader), desc="Batch", position=3, ncols=80, leave=False):
                 point = rearrange(point, "b s c -> (b s) c")
                 sdf = rearrange(sdf.unsqueeze(2), "b s c -> (b s) c")
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     cfg = config.Config()
     train_dataloader, validation_loader = create_test_validation_data_loader(
         dataset_dir=cfg.dataset_path,
-        batch_size=32, 
+        batch_size=32,
         dataset_config_file="dataset/config.json",
         num_sdf_samples_per_minor_batch=cfg.num_points_per_minor_batch
     )
