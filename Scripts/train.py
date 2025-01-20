@@ -45,7 +45,7 @@ class ModelTrainer:
             length = 0
             for i, (voxel_tensor, point, sdf) in tqdm(enumerate(self.dataloader), desc="Batch", position=3, ncols=80, leave=False):
                 point = rearrange(point, "b s c -> (b s) c")
-                sdf = rearrange(sdf.unsqueeze(2), "b s c -> (b s) c")
+                sdf = rearrange(sdf, "b s c -> (b s) c")
 
                 voxel_tensor = voxel_tensor.to(device=self.device)
                 point = point.to(device=self.device)
