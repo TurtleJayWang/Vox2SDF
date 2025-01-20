@@ -79,7 +79,7 @@ class ModelTrainer:
         
     def load_parameters(self):
         if os.path.exists(self.checkpoint_filename):
-            with open(self.checkpoint_filename, "b+a") as cp_f:
+            with open(self.checkpoint_filename, "b+r") as cp_f:
                 self.network.load_state_dict(torch.load(cp_f))
     
     def save_loss(self):
